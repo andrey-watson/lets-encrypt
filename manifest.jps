@@ -50,7 +50,7 @@ targetNodes:
     - jenkins2
 
 homepage: https://github.com/jelastic-jps/lets-encrypt
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/lets-encrypt/stage
+baseUrl: https://raw.githubusercontent.com/andrey-watson/lets-encrypt/my
 logo: images/letsencrypt.png
 
 description:
@@ -101,14 +101,10 @@ buttons:
     action: configure
 
 onInstall:
-  - cmd[${targetNodes.nodeGroup}]: |-
-      [[ -e /usr/bin/python ]] || ln -s /usr/bin/python3 /usr/bin/python 
-    user: root
   - setGlobals:
       nodeId: ${settings.nodeId:}
       nodeGroup: ${targetNodes.nodeGroup:}
       withExtIp: ${settings.withExtIp:}
-      withIntSSL: ${settings.withIntSSL:true}
       webroot: ${settings.webroot:}
       webrootPath: ${settings.webrootPath:}
       fallbackToX1: ${settings.fallbackToX1:}
@@ -117,7 +113,6 @@ onInstall:
       undeployHook: ${settings.undeployHook:}
       undeployHookType: ${settings.undeployHookType:}
       test: ${settings.test:}
-      envAppid: ${env.appid}
   - checkClustering:
       nodeGroup: ${globals.nodeGroup}
       app_id: ${globals.app_id}
@@ -199,18 +194,15 @@ actions:
       undeployHook: ${globals.undeployHook}
       undeployHookType: ${globals.undeployHookType}
       withExtIp: ${globals.withExtIp}
-      withIntSSL: ${globals.withIntSSL}
       webroot: ${globals.webroot}
       webrootPath: ${globals.webrootPath}
       fallbackToX1: ${globals.fallbackToX1}
       test: ${globals.test}
       clientVersion: ${globals.version_acme-sh:}
-      envAppid: ${globals.envAppid}
   
   callScript:
     script: |
-      var targetAppid = api.dev.apps.CreatePersistence ? "${globals.envAppid}" : appid;
-      var resp = api.dev.scripting.Eval(targetAppid, session, '${env.envName}-${targetNodes.nodeGroup}-${globals.scriptSufix}', {action:'${this.action}'});
+      var j = jelastic, resp = j.dev.scripting.Eval(appid, session, '${env.envName}-${targetNodes.nodeGroup}-${globals.scriptSufix}', {action:'${this.action}'});
       if (resp.result == 0 && typeof resp.response === 'object' && resp.response.result != 0) resp = resp.response;
       return resp;
   
@@ -263,8 +255,7 @@ actions:
   
   delete:
     script: |
-      var targetAppid = api.dev.apps.CreatePersistence ? "${globals.envAppid}" : appid;
-      api.dev.scripting.DeleteScript(targetAppid, session, '${env.envName}-${targetNodes.nodeGroup}-${globals.scriptSufix}');
+      jelastic.dev.scripting.DeleteScript('${env.envName}-${targetNodes.nodeGroup}-${globals.scriptSufix}');
       return {result:0}
       
   installLE:
@@ -277,7 +268,6 @@ actions:
       deployHookType: ${globals.deployHookType}
       undeployHookType: ${globals.undeployHookType}
       withExtIp: ${globals.withExtIp}
-      withIntSSL: ${globals.withIntSSL}
       webroot: ${globals.webroot}
       webrootPath: ${globals.webrootPath}
       fallbackToX1: ${globals.fallbackToX1}
@@ -285,7 +275,6 @@ actions:
       
   createScript:
     script: |
-      var targetAppid = api.dev.apps.CreatePersistence ? "${globals.envAppid}" : appid;
-      return api.dev.scripting.CreateScript(targetAppid, session, "${this.scriptName}", "js", "${this.code:}")
+      return jelastic.dev.scripting.CreateScript("${this.scriptName}", "js", "${this.code:}")
 
 success: /text/success.md
